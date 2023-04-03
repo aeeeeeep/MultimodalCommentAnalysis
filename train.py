@@ -111,7 +111,7 @@ def train():
                     wandb.log({'step': step.value})
                     wandb.log({'train_loss': loss.item(), 'lr': optimizer.param_groups[0]['lr']})
         ema.apply_shadow()
-        if epoch % 2 == 0 and epoch < 5:
+        if epoch % 1 == 0:
             checkpoint.save(conf['model_dir'] + '/model_%d.pt' % epoch)
             model.eval()
             metrics = evaluate(model, valid_loader)

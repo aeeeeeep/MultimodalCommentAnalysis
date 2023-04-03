@@ -9,6 +9,7 @@ class CustomModel(nn.Module):
         self.model = BartModel(config)
         self.dropout = nn.Dropout(p=0.2)
         self.linear = nn.Linear(config.d_model, 2)
+        self.out = nn.Softmax(dim=0)
 
     def forward(self, inputs, attn_mask, infer=False):
         output = self.model(input_ids=inputs, attention_mask=attn_mask).last_hidden_state
@@ -16,4 +17,5 @@ class CustomModel(nn.Module):
             output = self.dropout(output)
         output = self.linear(output)
         output = torch.squeeze(output[:, -1, :])
+        output = self.out(output)
         return output
