@@ -9,6 +9,11 @@ class CustomModel(nn.Module):
         self.dropout = nn.Dropout(p=0.2)
         self.linear = nn.Linear(config.d_model, 2)
 
+        for param in self.model.parameters():
+            param.requires_grad_(False)
+        for param in self.linear.parameters():
+            param.requires_grad_(True)
+
     def forward(self, inputs, attn_mask, infer=False):
         output = self.model(input_ids=inputs, attention_mask=attn_mask).last_hidden_state
         if not infer:
