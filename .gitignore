@@ -11,3 +11,6 @@ Books_5_images/
 *.tar.gz
 *.zip
 .idea/
+checkpoint/
+__pycache__/
+wandb/

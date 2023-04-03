@@ -1,5 +1,0 @@
-2023-04-03 21:22:12,333 INFO    StreamThr :64353 [internal.py:wandb_internal():87] W&B internal server running at pid: 64353, started at: 2023-04-03 21:22:12.332429
-2023-04-03 21:22:12,336 DEBUG   HandlerThread:64353 [handler.py:handle_request():144] handle_request: status
-2023-04-03 21:22:12,338 INFO    WriterThread:64353 [datastore.py:open_for_write():85] open: /root/MultimodalCommentAnalysis/wandb/run-20230403_212212-3k5ygzyi/run-3k5ygzyi.wandb
-2023-04-03 21:22:12,341 DEBUG   SenderThread:64353 [sender.py:send():336] send: header
-2023-04-03 21:22:12,357 DEBUG   SenderThread:64353 [sender.py:send():336] send: run
