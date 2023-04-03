@@ -21,21 +21,21 @@ random.shuffle(neg_samples)
 num_pos_train = int(len(pos_samples) * 0.7)
 num_neg_train = int(len(neg_samples) * 0.7)
 
-train_samples = pos_samples[:num_pos_train] + neg_samples[:num_neg_train]
-val_samples = pos_samples[num_pos_train:] + neg_samples[num_neg_train:]
+train_samples = pos_samples[:10000] + neg_samples[:10000]
+val_samples = pos_samples[2500:] + neg_samples[2500:]
 
 random.shuffle(train_samples)
 random.shuffle(val_samples)
 
 with open('../data/train.csv', 'w', newline='', encoding='utf-8') as f:
     writer = csv.writer(f)
-    writer.writerow(['ID', 'text', 'vote', 'label'])
+    writer.writerow(['ID', 'text', 'label'])
     for sample in train_samples:
         writer.writerow([sample['ID'], sample['text'], sample['label']])
 
 with open('../data/val.csv', 'w', newline='', encoding='utf-8') as f:
     writer = csv.writer(f)
-    writer.writerow(['ID', 'text', 'vote', 'label'])
+    writer.writerow(['ID', 'text', 'label'])
     for sample in val_samples:
         writer.writerow([sample['ID'], sample['text'], sample['label']])
 

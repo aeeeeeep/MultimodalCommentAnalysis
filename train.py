@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from config import Config
 from dataset import BartDataset
-from models import BartModel
+from models import CustomModel
 from utils import to_device, Checkpoint, Step, Smoother, Logger, EMA, FGM
 
 
@@ -18,7 +18,7 @@ def compute_batch(model, source, attn_mask, targets):
     source = to_device(source, 'cuda:0')
     targets = to_device(targets, 'cuda:0')
     pred = model(source[:, :conf['input_l']], attn_mask)
-    loss = nn.CrossEntropyLoss(targets, pred)
+    loss = losses(targets, pred)
     return loss
 
 
@@ -42,7 +42,7 @@ def evaluate(model, loader):
     for (source, attn_mask, targets) in tqdm(loader):
         source = to_device(source, 'cuda:0')
         pred = model(source, attn_mask, infer=True)
-        pred = pred.cpu().numpy()
+        pred = pred.cpu().detach()
         val_acc += pred.argmax(dim=1).eq(targets.argmax(dim=1)).sum().item()
         tot_count += targets.shape[0]
     metrics.update(val_acc=val_acc / tot_count)
@@ -51,9 +51,9 @@ def evaluate(model, loader):
 
 
 def get_model():
-    return BartModel(n_token=conf['n_token'])
+    return CustomModel()
 
-
+losses = nn.CrossEntropyLoss()
 def train():
     if WANDB:
         wandb.init(
@@ -96,7 +96,7 @@ def train():
             loss.backward()
 
             fgm.attack()
-            adv_loss, _ = compute_batch(model, source, attn_mask, targets)
+            adv_loss = compute_batch(model, source, attn_mask, targets)
             adv_loss = adv_loss.mean()
             adv_loss.backward()
             fgm.restore()
@@ -111,7 +111,7 @@ def train():
                     wandb.log({'step': step.value})
                     wandb.log({'train_loss': loss.item(), 'lr': optimizer.param_groups[0]['lr']})
         ema.apply_shadow()
-        if epoch % 6 == 0 and epoch >= 100:
+        if epoch % 2 == 0 and epoch < 5:
             checkpoint.save(conf['model_dir'] + '/model_%d.pt' % epoch)
             model.eval()
             metrics = evaluate(model, valid_loader)

@@ -11,7 +11,6 @@ def get_parameters(model, pars):
     print(ret)
     return ret
 
-
 def output_tensor(x, precision=3):
     print(np.round(x.detach().cpu().numpy(), precision))
 

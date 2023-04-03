@@ -33,7 +33,7 @@ class BartDataset(BaseDataset):
         self.sos_id = sos_id
         self.pad_id = pad_id
         self.eos_id = eos_id
-        self.tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
+        self.tokenizer = BartTokenizer.from_pretrained('/root/autodl-tmp/pretrain/')
         self.text = self.df['text'].values
         self.labels = self.df['label'].values
 
@@ -43,9 +43,9 @@ class BartDataset(BaseDataset):
     def _try_getitem(self, idx):
         source = self.text[idx]
         source_ids = self.tokenizer(source, max_length=512, padding='max_length', truncation=True)
+        target = torch.zeros(2, dtype=torch.float32)
         try:
-            target = torch.zeros(2, dtype=torch.float32)
-            target[self.labels[idx]] = 1
+            target[int(self.labels[idx])] = 1.0
         except:
             return torch.LongTensor(source_ids['input_ids']), torch.LongTensor(source_ids['attention_mask'])
         return torch.LongTensor(source_ids['input_ids']), torch.LongTensor(source_ids['attention_mask']), target
