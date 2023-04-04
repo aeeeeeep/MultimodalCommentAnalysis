@@ -4,8 +4,7 @@ import traceback
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
-from transformers import BartTokenizer
-
+from transformers import BertTokenizer, BertModel
 
 class BaseDataset(Dataset):
     def _try_getitem(self, idx):
@@ -27,13 +26,10 @@ class BaseDataset(Dataset):
                 wait = min(wait * 2, 1000)
 
 
-class BartDataset(BaseDataset):
+class BertDataset(BaseDataset):
     def __init__(self, data_file, sos_id=0, eos_id=2, pad_id=1):
         self.df = pd.read_csv(data_file)
-        self.sos_id = sos_id
-        self.pad_id = pad_id
-        self.eos_id = eos_id
-        self.tokenizer = BartTokenizer.from_pretrained('/root/autodl-tmp/pretrain/')
+        self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
         self.text = self.df['text'].values
         self.labels = self.df['label'].values
 
@@ -42,10 +38,10 @@ class BartDataset(BaseDataset):
 
     def _try_getitem(self, idx):
         source = self.text[idx]
-        source_ids = self.tokenizer(source, max_length=512, padding='max_length', truncation=True)
+        source_ids = self.tokenizer.encode_plus(source, max_length=256, padding='max_length', truncation=True, return_tensors='pt')
         target = torch.zeros(2, dtype=torch.float32)
         try:
             target[int(self.labels[idx])] = 1.0
         except:
-            return torch.LongTensor(source_ids['input_ids']), torch.LongTensor(source_ids['attention_mask'])
-        return torch.LongTensor(source_ids['input_ids']), torch.LongTensor(source_ids['attention_mask']), target
+            return source_ids
+        return source_ids, target

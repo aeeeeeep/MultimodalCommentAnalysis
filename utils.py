@@ -27,7 +27,10 @@ def to_device(data, device):
     elif isinstance(data, dict):
         data = dict((k, to_device(v, device)) for k, v in data.items())
     else:
-        raise TypeError('Unsupported Datatype! Must be a Tensor/List/Tuple/Dict.', type(data), data)
+        try:
+            data = data.to(device=device)
+        except:
+            print('Unsupported Datatype! Must be a Tensor/List/Tuple/Dict.', type(data), data)
     return data
 
 

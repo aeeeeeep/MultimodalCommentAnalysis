@@ -9,46 +9,33 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from config import Config
-from dataset import BartDataset
+from dataset import BertDataset
 from models import CustomModel
 from utils import to_device, Checkpoint, Step, Smoother, Logger, EMA, FGM
 
 
-def compute_batch(model, source, attn_mask, targets):
-    source = to_device(source, 'cuda:0')
+def compute_batch(model, source, targets):
+    # source = to_device(source, 'cuda:0')
+    source = source.to('cuda:0')
     targets = to_device(targets, 'cuda:0')
-    pred = model(source[:, :conf['input_l']], attn_mask)
+    pred = model(source)
     loss = losses(targets, pred)
     return loss
-
-
-def array2str(arr):
-    out = ''
-    for i in range(len(arr)):
-        if arr[i] == conf['pad_id'] or arr[i] == conf['eos_id']:
-            break
-        if arr[i] == conf['sos_id']:
-            continue
-        out += str(int(arr[i])) + ' '
-    if len(out.strip()) == 0:
-        out = '0'
-    return out.strip()
-
 
 def evaluate(model, loader):
     metrics = Smoother(100)
     val_acc = 0
     tot_count = 0
-    for (source, attn_mask, targets) in tqdm(loader):
-        source = to_device(source, 'cuda:0')
-        pred = model(source, attn_mask, infer=True)
+    for (source, targets) in tqdm(loader):
+        # source = to_device(source, 'cuda:0')
+        source = source.to('cuda:0')
+        pred = model(source)
         pred = pred.cpu().detach()
         val_acc += pred.argmax(dim=1).eq(targets.argmax(dim=1)).sum().item()
         tot_count += targets.shape[0]
     metrics.update(val_acc=val_acc / tot_count)
     print(metrics.value())
     return metrics
-
 
 def get_model():
     return CustomModel()
@@ -61,8 +48,8 @@ def train():
             name="bart",
         )
 
-    train_data = BartDataset(conf['train_file'], conf['input_l'])
-    valid_data = BartDataset(conf['valid_file'], conf['input_l'])
+    train_data = BertDataset(conf['train_file'], conf['input_l'])
+    valid_data = BertDataset(conf['valid_file'], conf['input_l'])
 
     train_loader = DataLoader(train_data, batch_size=conf['batch'], shuffle=True, num_workers=12, drop_last=False)
     valid_loader = DataLoader(valid_data, batch_size=conf['valid_batch'], shuffle=True, num_workers=12, drop_last=False)
@@ -88,15 +75,15 @@ def train():
     for epoch in range(start_epoch, conf['n_epoch']):
         print('epoch', epoch)
         logger.log('new epoch', epoch)
-        for (source, attn_mask, targets) in tqdm(train_loader):
-            step.forward(source.shape[0])
+        for (source, targets) in tqdm(train_loader):
+            step.forward(conf['batch'])
 
-            loss = compute_batch(model, source, attn_mask, targets)
+            loss = compute_batch(model, source, targets)
             loss = loss.mean()
             loss.backward()
 
             fgm.attack()
-            adv_loss = compute_batch(model, source, attn_mask, targets)
+            adv_loss = compute_batch(model, source, targets)
             adv_loss = adv_loss.mean()
             adv_loss.backward()
             fgm.restore()
