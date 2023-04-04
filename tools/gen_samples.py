@@ -21,7 +21,7 @@ random.shuffle(neg_samples)
 num_pos_train = int(len(pos_samples) * 0.7)
 num_neg_train = int(len(neg_samples) * 0.7)
 
-train_samples = pos_samples[:20000] + neg_samples[:20000]
+train_samples = pos_samples[:5000] + neg_samples[:5000]
 val_samples = pos_samples[-5000:] + neg_samples[-5000:]
 
 random.shuffle(train_samples)
