@@ -1,6 +1,6 @@
 import time
 from pathlib import Path
-
+import pandas as pd
 import numpy as np
 import torch
 import torch.nn as nn
@@ -334,3 +334,19 @@ class AWP:
                 param.data = self.backup[name]
         self.backup = {}
         self.backup_eps = {}
+
+def process_notes(notes):
+    tokenizer = RegexpTokenizer(r'\w+')
+    stop_words = stopwords.words('english')
+    notes_processed = [[word.lower() for word in tokenizer.tokenize(x) if word not in stop_words] for x in notes]
+    return notes_processed
+
+def pad_or_cut(value: np.ndarray, target_length: int):
+    """填充或截断一维numpy到固定的长度"""
+    data_row = None
+    if len(value) < target_length:  # 填充      
+        data_row = np.pad(value, [(0, target_length - len(value))])
+    elif len(value) > target_length:  # 截断    
+        data_row = value[:target_length]
+    return data_row
+

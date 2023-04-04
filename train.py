@@ -40,12 +40,12 @@ def evaluate(model, loader):
 def get_model():
     return CustomModel()
 
-losses = nn.CrossEntropyLoss()
+losses = nn.BCEWithLogitsLoss()
 def train():
     if WANDB:
         wandb.init(
             project="MultimodalCommentAnalysis",
-            name="bart",
+            name="bert",
         )
 
     train_data = BertDataset(conf['train_file'], conf['input_l'])

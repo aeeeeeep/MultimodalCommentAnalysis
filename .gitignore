@@ -14,3 +14,4 @@ Books_5_images/
 checkpoint/
 __pycache__/
 wandb/
+*.csv.bk
