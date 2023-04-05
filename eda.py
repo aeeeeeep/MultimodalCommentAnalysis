@@ -18,22 +18,17 @@ def hist(csv_file):
     print("The minimum input length is: ",np.array(source_len).min())
     print("The average input length is: ",np.array(source_len).mean())
     print("The mode of input length is: ",np.argmax(np.bincount(np.array(source_len))))
-    plt.hist(source_len,bins=5,alpha=0.5)
+    plt.hist(source_len,bins=43,alpha=0.5)
     plt.show()
-
 def count_numbers(csv_file):
-    numbers = []
+    cou = 0
     with open(csv_file, 'r') as f:
         reader = csv.reader(f)
         for row in reader:
-            for column in row[1:]:
-                numbers += column.split()
-    count = Counter(numbers)
-    top_100 = count.most_common(100)
-    print("The first 100 numbers with the most occurrences:")
-    for number, frequency in top_100:
-        print(f"{number}: {frequency}")
-    print(f"There are {len(set(numbers))} kinds of numbers")
+            numbers = len(row[1].split())
+            if numbers >= 5 and numbers <= 10 and int(row[2]) > 5:
+                cou+=1
+    print(cou)
 
-# count_numbers("./data/train.csv")
-hist("./data/train.csv")
+count_numbers("./data/label.csv")
+hist("./data/label.csv")
