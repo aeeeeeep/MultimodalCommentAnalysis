@@ -1,5 +1,6 @@
 import re
 import csv
+import time
 import json
 import numpy as np
 from tqdm import tqdm
@@ -19,6 +20,10 @@ def get_label(review, f):
         vote = int(review['vote'].replace(',',''))
         text = review['reviewText']
         summary = review['summary']
+        asin = review['asin']
+        reviewtime = int(review['unixReviewTime'])
+        reviewtime = time.localtime(reviewtime)
+        reviewtime = time.strftime("%Y-%m-%d %H", reviewtime)
         blob_text = TextBlob(text)
         blob_summary = TextBlob(summary)
         text_list = []
@@ -32,9 +37,11 @@ def get_label(review, f):
         text_summary = re.sub('[^\da-zA-Z\s\.,!?]', '', summary).replace('\n','')
         if len(text.split())>=3 and len(summary.split())>=1:
             if s<0 and review['overall']<=3.0:
-                data = [reviewerID, str(text_summary), vote, 0.0]
+                data = [reviewerID, str(text_summary), asin, reviewtime, vote, 0.0]
+                # data = [reviewerID, asin, reviewtime, 0.0]
             elif s>0 and review['overall']>=4.0:
-                data = [reviewerID, str(text_summary), vote, 1.0]
+                data = [reviewerID, str(text_summary), asin, reviewtime, vote, 1.0]
+                # data = [reviewerID, asin, reviewtime, 1.0]
             else:
                 return
             lock.acquire()
@@ -46,7 +53,8 @@ def get_label(review, f):
 
 with open('label.csv', 'a') as f:
     writer = csv.writer(f)
-    writer.writerow(["ID","summary","vote","label"])
+    writer.writerow(["ID","summary","asin","time","vote","label"])
+    # writer.writerow(["ID","asin","time","label"])
 
 # for review in tqdm(read_json_file('./Books_5.json')):
 #     get_label(review)
