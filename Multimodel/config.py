@@ -8,10 +8,7 @@ def parse_args():
     parser.add_argument('--dropout', type=float, default=0.3, help='dropout ratio')
 
     # ========================= Data Configs ==========================
-    parser.add_argument('--train_annotation', type=str, default='data/annotations/labeled.json')
-    parser.add_argument('--test_annotation', type=str, default='data/annotations/test_a.json')
-    parser.add_argument('--train_zip_feats', type=str, default='data/zip_feats/labeled.zip')
-    parser.add_argument('--test_zip_feats', type=str, default='data/zip_feats/test_a.zip')
+    parser.add_argument('--data_file', type=str, default='data/label.csv')
     parser.add_argument('--test_output_csv', type=str, default='data/result.csv')
     parser.add_argument('--val_ratio', default=0.1, type=float, help='split 10 percentages of training data as validation')
     parser.add_argument('--batch_size', default=64, type=int, help="use for training duration per worker")
@@ -35,18 +32,17 @@ def parse_args():
     parser.add_argument("--weight_decay", default=0.01, type=float, help="Weight deay if we apply some.")
     parser.add_argument("--adam_epsilon", default=1e-6, type=float, help="Epsilon for Adam optimizer.")
 
-    # ========================== Title BERT =============================
-    parser.add_argument('--bert_dir', type=str, default='hfl/chinese-macbert-base')
+    # ========================== text BERT =============================
+    parser.add_argument('--bert_dir', type=str, default='bert-base-uncased')
     parser.add_argument('--bert_cache', type=str, default='data/cache')
-    parser.add_argument('--bert_seq_length', type=int, default=50)
+    parser.add_argument('--bert_seq_length', type=int, default=256)
     parser.add_argument('--bert_learning_rate', type=float, default=3e-5)
     parser.add_argument('--bert_warmup_steps', type=int, default=5000)
     parser.add_argument('--bert_max_steps', type=int, default=30000)
     parser.add_argument("--bert_hidden_dropout_prob", type=float, default=0.1)
 
     # ========================== Video =============================
-    parser.add_argument('--frame_embedding_size', type=int, default=768)
-    parser.add_argument('--max_frames', type=int, default=32)
+    parser.add_argument('--image_embedding_size', type=int, default=768)
     parser.add_argument('--vlad_cluster_size', type=int, default=64)
     parser.add_argument('--vlad_groups', type=int, default=8)
     parser.add_argument('--vlad_hidden_size', type=int, default=1024, help='nextvlad output size using dense')

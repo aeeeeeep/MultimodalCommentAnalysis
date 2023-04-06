@@ -3,24 +3,22 @@ import torch.nn as nn
 import torch.nn.functional as F
 from transformers import BertModel
 
-from category_id_map import CATEGORY_ID_LIST
-
 
 class MultiModal(nn.Module):
     def __init__(self, args):
         super().__init__()
         self.bert = BertModel.from_pretrained(args.bert_dir, cache_dir=args.bert_cache)
-        self.nextvlad = NeXtVLAD(args.frame_embedding_size, args.vlad_cluster_size,
+        self.nextvlad = NeXtVLAD(args.image_embedding_size, args.vlad_cluster_size,
                                  output_size=args.vlad_hidden_size, dropout=args.dropout)
         self.enhance = SENet(channels=args.vlad_hidden_size, ratio=args.se_ratio)
         bert_output_size = 768
         self.fusion = ConcatDenseSE(args.vlad_hidden_size + bert_output_size, args.fc_size, args.se_ratio, args.dropout)
-        self.classifier = nn.Linear(args.fc_size, len(CATEGORY_ID_LIST))
+        self.classifier = nn.Linear(args.fc_size, 3)
 
     def forward(self, inputs, inference=False):
-        bert_embedding = self.bert(inputs['title_input'], inputs['title_mask'])['pooler_output']
+        bert_embedding = self.bert(inputs['text_input'], inputs['text_mask'])['pooler_output']
 
-        vision_embedding = self.nextvlad(inputs['frame_input'], inputs['frame_mask'])
+        vision_embedding = self.nextvlad(inputs['image_input'], inputs['image_mask'])
         vision_embedding = self.enhance(vision_embedding)
 
         final_embedding = self.fusion([vision_embedding, bert_embedding])
