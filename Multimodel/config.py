@@ -8,14 +8,15 @@ def parse_args():
     parser.add_argument('--dropout', type=float, default=0.3, help='dropout ratio')
 
     # ========================= Data Configs ==========================
-    parser.add_argument('--data_file', type=str, default='data/label.csv')
+    parser.add_argument('--train_data_file', type=str, default='data/train.csv')
+    parser.add_argument('--val_data_file', type=str, default='data/val.csv')
     parser.add_argument('--test_output_csv', type=str, default='data/result.csv')
     parser.add_argument('--val_ratio', default=0.1, type=float, help='split 10 percentages of training data as validation')
-    parser.add_argument('--batch_size', default=64, type=int, help="use for training duration per worker")
-    parser.add_argument('--val_batch_size', default=256, type=int, help="use for validation duration per worker")
-    parser.add_argument('--test_batch_size', default=256, type=int, help="use for testing duration per worker")
+    parser.add_argument('--batch_size', default=48, type=int, help="use for training duration per worker")
+    parser.add_argument('--val_batch_size', default=128, type=int, help="use for validation duration per worker")
+    parser.add_argument('--test_batch_size', default=128, type=int, help="use for testing duration per worker")
     parser.add_argument('--prefetch', default=16, type=int, help="use for training duration per worker")
-    parser.add_argument('--num_workers', default=4, type=int, help="num_workers for dataloaders")
+    parser.add_argument('--num_workers', default=15, type=int, help="num_workers for dataloaders")
 
     # ======================== SavedModel Configs =========================
     parser.add_argument('--savedmodel_path', type=str, default='save/v1')
@@ -41,11 +42,14 @@ def parse_args():
     parser.add_argument('--bert_max_steps', type=int, default=30000)
     parser.add_argument("--bert_hidden_dropout_prob", type=float, default=0.1)
 
+    # ========================== Swin ===================================
+    parser.add_argument('--swin_pretrained_path', type=str, default='/root/autodl-tmp/checkpoint-muti/swin_tiny_patch4_window7_224_22k.pth')
+
+
     # ========================== Video =============================
     parser.add_argument('--image_embedding_size', type=int, default=768)
     parser.add_argument('--vlad_cluster_size', type=int, default=64)
-    parser.add_argument('--vlad_groups', type=int, default=8)
-    parser.add_argument('--vlad_hidden_size', type=int, default=1024, help='nextvlad output size using dense')
+    parser.add_argument('--vlad_hidden_size', type=int, default=768, help='nextvlad output size using dense')
     parser.add_argument('--se_ratio', type=int, default=8, help='reduction factor in se context gating')
 
     # ========================== Fusion Layer =============================

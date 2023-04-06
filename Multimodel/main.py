@@ -1,8 +1,10 @@
+WANDB=True
 import logging
 import os
 import time
 import torch
-
+import wandb
+from tqdm import tqdm
 from config import parse_args
 from data_helper import create_dataloaders
 from model import MultiModal
@@ -15,7 +17,7 @@ def validate(model, val_dataloader):
     labels = []
     losses = []
     with torch.no_grad():
-        for batch in val_dataloader:
+        for batch in tqdm(val_dataloader):
             loss, _, pred_label_id, label = model(batch)
             loss = loss.mean()
             predictions.extend(pred_label_id.cpu().numpy())
@@ -29,6 +31,9 @@ def validate(model, val_dataloader):
 
 
 def train_and_validate(args):
+    if WANDB:
+        wandb.init(project="MultimodalCommentAnalysis",name="Multimodel")
+
     # 1. load data
     train_dataloader, val_dataloader = create_dataloaders(args)
 
@@ -44,7 +49,7 @@ def train_and_validate(args):
     start_time = time.time()
     num_total_steps = len(train_dataloader) * args.max_epochs
     for epoch in range(args.max_epochs):
-        for batch in train_dataloader:
+        for batch in tqdm(train_dataloader):
             model.train()
             loss, accuracy, _, _ = model(batch)
             loss = loss.mean()
@@ -60,11 +65,23 @@ def train_and_validate(args):
                 remaining_time = time_per_step * (num_total_steps - step)
                 remaining_time = time.strftime('%H:%M:%S', time.gmtime(remaining_time))
                 logging.info(f"Epoch {epoch} step {step} eta {remaining_time}: loss {loss:.3f}, accuracy {accuracy:.3f}")
+                if WANDB:
+                    wandb.log({
+                        "step":step,
+                        "train_loss":loss,
+                        "accuracy":accuracy,
+                        })
 
         # 4. validation
         loss, results = validate(model, val_dataloader)
         results = {k: round(v, 4) for k, v in results.items()}
         logging.info(f"Epoch {epoch} step {step}: loss {loss:.3f}, {results}")
+        if WANDB:
+            wandb.log({
+                "epoch":epoch,
+                "val_loss":loss,
+                "accuracy":accuracy,
+                })
 
         # 5. save checkpoint
         mean_f1 = results['mean_f1']
@@ -73,6 +90,10 @@ def train_and_validate(args):
             state_dict = model.module.state_dict() if args.device == 'cuda' else model.state_dict()
             torch.save({'epoch': epoch, 'model_state_dict': state_dict, 'mean_f1': mean_f1},
                        f'{args.savedmodel_path}/model_epoch_{epoch}_mean_f1_{mean_f1}.bin')
+            if WANDB:
+                wandb.log({
+                    "mean_f1":mean_f1,
+                    })
 
 
 def main():

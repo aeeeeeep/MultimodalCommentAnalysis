@@ -13,11 +13,8 @@ from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normal
 from transformers import BertTokenizer
 
 def create_dataloaders(args):
-    dataset = MultiModalDataset(args, args.data_file)
-    size = len(dataset)
-    val_size = int(size * args.val_ratio)
-    train_dataset, val_dataset = torch.utils.data.random_split(dataset, [size - val_size, val_size],
-                                                               generator=torch.Generator().manual_seed(args.seed))
+    train_dataset = MultiModalDataset(args, args.train_data_file)
+    val_dataset = MultiModalDataset(args, args.val_data_file)
 
     if args.num_workers > 0:
         dataloader_class = partial(DataLoader, pin_memory=True, num_workers=args.num_workers, prefetch_factor=args.prefetch)
@@ -36,7 +33,6 @@ def create_dataloaders(args):
                                       sampler=val_sampler,
                                       drop_last=False)
     return train_dataloader, val_dataloader
-
 
 class MultiModalDataset(Dataset):
     """ A simple class that supports multi-modal inputs.
@@ -59,6 +55,10 @@ class MultiModalDataset(Dataset):
         self.id = self.df['ID'].values
         self.text = self.df['text'].values
         self.labels = self.df['label'].values
+        self.img_list = []
+        for i in os.listdir("../data/Books_5_images"):
+                self.img_list.append(i[:-4])
+        self.img_list = set(self.img_list)
         # initialize the text tokenizer
         self.tokenizer = BertTokenizer.from_pretrained(args.bert_dir, use_fast=True, cache_dir=args.bert_cache)
         self.transform = Compose([
@@ -69,10 +69,11 @@ class MultiModalDataset(Dataset):
         ])
 
     def __len__(self) -> int:
-        return len(self.ID)
+        return len(self.id)
 
     def get_visual_feats(self, idx: int) -> tuple:
-        img = Image.open('./data' + self.id[idx] + '.jpg')
+        img = Image.open('./data/Books_5_images/' + self.id[idx] + '.jpg')
+        img = img.convert("RGB")
         img_tensor = self.transform(img)
         mask = torch.ones((1,), dtype=torch.long)
         return img_tensor, mask
@@ -102,8 +103,8 @@ class MultiModalDataset(Dataset):
 
         # Step 4, load label if not test mode
         if not self.test_mode:
-            label = torch.zeros(3, dtype=torch.float32)
+            label = torch.zeros(2, dtype=torch.float32)
             label[int(self.labels[idx])] = 1.0
-            data['label'] = torch.LongTensor([label])
+            data['label'] = label
 
         return data

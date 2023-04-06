@@ -1,4 +1,5 @@
 import re
+import gc
 import csv
 import os
 import time
@@ -15,7 +16,7 @@ def read_json_file(file_path):
         for line in f:
             yield json.loads(line)
 
-def get_label(review, f, img_list):
+def get_label(review, f):
     reviewerID = review['reviewerID']
     if 'reviewText' in review and 'summary' in review:
         vote = int(review['vote'].replace(',',''))
@@ -55,25 +56,26 @@ def get_label(review, f, img_list):
         finally:
             lock.release()
 
-with open('label_0.csv', 'a') as f:
-    writer = csv.writer(f)
-    writer.writerow(["ID","text","label"])
-    # writer.writerow(["ID","asin","time","label"])
+# img_list = []
+# for i in os.listdir("../data/Books_5_images"):
+#     img_list.append(i[:-4])
 
-# for review in tqdm(read_json_file('./Books_5.json')):
-#     get_label(review)
+for split in range(10)[0:]:
+    gc.collect(generation=0)
+    max_workers = 120
+    executor = ThreadPoolExecutor(max_workers=max_workers)
+    tasks = []
+    with open('label_{}.csv'.format(split), 'a') as f:
+        writer = csv.writer(f)
+        writer.writerow(["ID","text","label"])
+        # writer.writerow(["ID","asin","time","label"])
 
-max_workers = 120
-executor = ThreadPoolExecutor(max_workers=max_workers)
-tasks = []
+    # for review in tqdm(read_json_file('./Books_5.json')):
+    #     get_label(review)
 
-img_list = []
-for i in os.listdir("../data/Books_5_images"):
-    img_list.append(i[:-4])
-
-with open('label_0.csv', 'a') as f:
-    for review in tqdm(read_json_file('../data/S_0.json')):
-    # for review in tqdm(read_json_file('../data/Books_5_img.json')):
-        tasks.append(executor.submit(get_label, review, f, img_list))
-    for futures in tqdm(as_completed(tasks), total=len(tasks)):
-        pass
+    with open('label_{}.csv'.format(split), 'a') as f:
+        for review in tqdm(read_json_file('../data/S_{}'.format(split))):
+        # for review in tqdm(read_json_file('../data/Books_5_img.json')):
+            tasks.append(executor.submit(get_label, review, f))
+        for futures in tqdm(as_completed(tasks), total=len(tasks)):
+            pass

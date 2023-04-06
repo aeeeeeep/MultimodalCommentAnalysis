@@ -6,9 +6,6 @@ from sklearn.metrics import f1_score, accuracy_score
 import torch
 from transformers import AdamW, get_linear_schedule_with_warmup
 
-from category_id_map import lv2id_to_lv1id
-
-
 def setup_device(args):
     args.device = 'cuda' if torch.cuda.is_available() else 'cpu'
     args.n_gpu = torch.cuda.device_count()
@@ -46,21 +43,13 @@ def build_optimizer(args, model):
 def evaluate(predictions, labels):
     # prediction and labels are all level-2 class ids
 
-    lv1_preds = [lv2id_to_lv1id(lv2id) for lv2id in predictions]
-    lv1_labels = [lv2id_to_lv1id(lv2id) for lv2id in labels]
+    f1_micro = f1_score(labels, predictions, average='micro')
+    f1_macro = f1_score(labels, predictions, average='macro')
+    mean_f1 = (f1_macro + f1_micro) / 2.0
 
-    lv2_f1_micro = f1_score(labels, predictions, average='micro')
-    lv2_f1_macro = f1_score(labels, predictions, average='macro')
-    lv1_f1_micro = f1_score(lv1_labels, lv1_preds, average='micro')
-    lv1_f1_macro = f1_score(lv1_labels, lv1_preds, average='macro')
-    mean_f1 = (lv2_f1_macro + lv1_f1_macro + lv1_f1_micro + lv2_f1_micro) / 4.0
-
-    eval_results = {'lv1_acc': accuracy_score(lv1_labels, lv1_preds),
-                    'lv2_acc': accuracy_score(labels, predictions),
-                    'lv1_f1_micro': lv1_f1_micro,
-                    'lv1_f1_macro': lv1_f1_macro,
-                    'lv2_f1_micro': lv2_f1_micro,
-                    'lv2_f1_macro': lv2_f1_macro,
+    eval_results = {'acc': accuracy_score(labels, predictions),
+                    'f1_micro': f1_micro,
+                    'f1_macro': f1_macro,
                     'mean_f1': mean_f1}
 
     return eval_results

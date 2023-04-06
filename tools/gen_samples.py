@@ -1,28 +1,48 @@
+import os
 import csv
 import random
+from tqdm import tqdm
 
-pos_samples = []
-neg_samples = []
+samples_0 = []
+samples_1 = []
+samples_2 = []
+
+img_list = []
+for i in os.listdir("../data/Books_5_images"):
+    img_list.append(i[:-4])
+img_list = set(img_list)
 
 with open('../data/label.csv', 'r', encoding='utf-8') as f:
     reader = csv.reader(f)
-    for i, row in enumerate(reader):
-        if i == 0:  # Skip header
+    for i, row in tqdm(enumerate(reader)):
+        if i == 0: 
             continue
-        sample = {'ID': row[0], 'text': row[1], 'vote': row[2], 'label': row[3]}
-        if sample['label'] == '1.0':
-            pos_samples.append(sample)
-        else:
-            neg_samples.append(sample)
+        sample = {'ID': row[0], 'text': row[1], 'label': row[2]}
+        if sample['ID'] in img_list and sample['label'] == '2.0':
+            sample['label'] = "1.0"
+            samples_2.append(sample)
+        elif sample['ID'] in img_list and sample['label'] == '0.0':
+            samples_0.append(sample)
+        # elif sample['ID'] in img_list and sample['label'] == '1.0':
+        #     samples_1.append(sample)
 
-random.shuffle(pos_samples)
-random.shuffle(neg_samples)
+print(len(samples_0))
+# print(len(samples_1))
+print(len(samples_2))
+exit()
 
-num_pos_train = int(len(pos_samples) * 0.7)
-num_neg_train = int(len(neg_samples) * 0.7)
+random.shuffle(samples_0)
+# random.shuffle(samples_1)
+random.shuffle(samples_2)
 
-train_samples = pos_samples[:5000] + neg_samples[:5000]
-val_samples = pos_samples[-5000:] + neg_samples[-5000:]
+num_0_train = int(len(samples_0) * 0.7)
+# num_1_train = int(len(samples_1) * 0.7)
+num_2_train = int(len(samples_2) * 0.7)
+
+train_samples = samples_0[:10000] + samples_2[:10000]
+# train_samples = samples_0[:num_0_train] + samples_1[:num_1_train] + samples_2[:num_2_train]
+val_samples = samples_0[-3000:] + samples_2[-3000:]
+# val_samples = samples_0[-num_0_train:] + samples_1[-num_1_train:] + samples_2[-num_2_train:]
 
 random.shuffle(train_samples)
 random.shuffle(val_samples)
@@ -38,4 +58,3 @@ with open('../data/val.csv', 'w', newline='', encoding='utf-8') as f:
     writer.writerow(['ID', 'text', 'label'])
     for sample in val_samples:
         writer.writerow([sample['ID'], sample['text'], sample['label']])
-
