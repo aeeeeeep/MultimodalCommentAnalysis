@@ -4,7 +4,7 @@ import argparse
 def parse_args():
     parser = argparse.ArgumentParser(description="Baseline for Weixin Challenge 2022")
 
-    parser.add_argument("--seed", type=int, default=2022, help="random seed.")
+    parser.add_argument("--seed", type=int, default=2023, help="random seed.")
     parser.add_argument('--dropout', type=float, default=0.3, help='dropout ratio')
 
     # ========================= Data Configs ==========================
@@ -24,12 +24,12 @@ def parse_args():
     parser.add_argument('--best_score', default=0.5, type=float, help='save checkpoint if mean_f1 > best_score')
 
     # ========================= Learning Configs ==========================
-    parser.add_argument('--max_epochs', type=int, default=20, help='How many epochs')
+    parser.add_argument('--max_epochs', type=int, default=2, help='How many epochs')
     parser.add_argument('--max_steps', default=50000, type=int, metavar='N', help='number of total epochs to run')
-    parser.add_argument('--print_steps', type=int, default=20, help="Number of steps to log training metrics.")
+    parser.add_argument('--print_steps', type=int, default=5, help="Number of steps to log training metrics.")
     parser.add_argument('--warmup_steps', default=1000, type=int, help="warm ups for parameters not in bert or vit")
     parser.add_argument('--minimum_lr', default=0., type=float, help='minimum learning rate')
-    parser.add_argument('--learning_rate', default=5e-5, type=float, help='initial learning rate')
+    parser.add_argument('--learning_rate', default=2e-5, type=float, help='initial learning rate')
     parser.add_argument("--weight_decay", default=0.01, type=float, help="Weight deay if we apply some.")
     parser.add_argument("--adam_epsilon", default=1e-6, type=float, help="Epsilon for Adam optimizer.")
 

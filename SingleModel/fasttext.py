@@ -1,16 +1,20 @@
-WANDB = True
+WANDB=False
 import wandb
 import random
 from collections import Counter, OrderedDict
 import os
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from prefetch_generator import BackgroundGenerator
 from torch.utils.data import DataLoader, Dataset
 from torchtext.data.utils import ngrams_iterator
 from torchtext.transforms import VocabTransform
 from torchtext.vocab import vocab
 from tqdm import tqdm
+from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score, mean_squared_error, mean_absolute_error, accuracy_score
+import warnings
+warnings.filterwarnings("ignore")
 
 from utils import *
 
@@ -18,8 +22,8 @@ from utils import *
 class Args:
     def __init__(self) -> None:
         self.batch_size = 8
-        self.lr = 0.5
-        self.epochs = 12
+        self.lr = 1e-4
+        self.epochs = 3
         self.num_workers = 12
 
         self.embed_size = 256
@@ -127,14 +131,22 @@ def train():
     model = Net(train_dataset.get_vocab_size()).to(args.device)
     corss_loss = nn.BCEWithLogitsLoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
-    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda epoch: 1 / (epoch + 1))
+    # scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda epoch: 1 / (epoch + 1))
     best_acc = 0.
 
     for epoch in range(args.epochs):
         print('Epoch: ', epoch)
+        accuracy_list = []
+        train_loss_list = []
+        train_acc_list = []
+        precision_list = []
+        recall_list = []
+        f1_list = []
+        roc_auc_list = []
+        mse_list = []
+        mae_list = []
+
         train_loss = 0.
-        train_acc = 0
-        tot_count = 0
         model.train()
         for idx, (data, target) in enumerate(tqdm(train_dataloader)):
             data, target = data.to(args.device), target.to(args.device)
@@ -143,44 +155,118 @@ def train():
             loss = loss.mean()
             loss.backward()
             optimizer.step()
-            scheduler.step()
-            train_loss += loss.item()
-            train_acc += pred.argmax(dim=1).eq(target.argmax(dim=1)).sum().item()
-            tot_count += target.shape[0]
-            if WANDB:
-                wandb.log({"train_loss": loss.item()})
+            # scheduler.step()
 
-        print('train Loss:{:.3f} Acc: {:.2f}% {}/{} lr:{:.2e}'.format(
-            train_loss / (idx + 1), 100 * train_acc / len(train_dataloader.dataset),
-            train_acc, len(train_dataloader.dataset), optimizer.param_groups[0]['lr']))
+            accuracy = accuracy_score(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy())
+            precision = precision_score(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy(), average='macro')
+            recall = recall_score(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy(), average='macro')
+            f1 = f1_score(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy(), average='macro')
+            try:
+                roc_auc = roc_auc_score(target.argmax(dim=1).cpu().numpy(), F.softmax(pred, dim=1).detach().cpu().numpy()[:, 1])
+            except ValueError:
+                pass
+            mse = mean_squared_error(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().detach().numpy())
+            mae = mean_absolute_error(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().detach().numpy())
+            if WANDB:
+                wandb.log({"train_loss": loss.item(),})
+            
+            accuracy_list.append(accuracy)
+            precision_list.append(precision)
+            recall_list.append(recall)
+            f1_list.append(f1)
+            roc_auc_list.append(roc_auc)
+            mse_list.append(mse)
+            mae_list.append(mae)
+
+        avg_accuracy = np.mean(accuracy_list)
+        avg_precision = np.mean(precision_list)
+        avg_recall = np.mean(recall_list)
+        avg_f1 = np.mean(f1_list)
+        avg_roc_auc = np.mean(roc_auc_list)
+        avg_mse = np.mean(mse_list)
+        avg_mae = np.mean(mae_list)
+        if WANDB:
+            wandb.log({
+                "train_accuracy":avg_accuracy,
+                "train_precision":avg_precision,
+                "train_recall":avg_recall,
+                "train_f1":avg_f1,
+                "train_roc_auc":avg_roc_auc,
+                "train_mse":avg_mse,
+                "train_mae":avg_mae,
+                })
+
         if WANDB:
             wandb.log({"epoch": epoch, "lr": optimizer.param_groups[0]['lr']})
         model.eval()
-        test_acc = 0
         test_loss = 0.
-        tot_count = 0
+        
+        accuracy_list = []
+        train_loss_list = []
+        train_acc_list = []
+        precision_list = []
+        recall_list = []
+        f1_list = []
+        roc_auc_list = []
+        mse_list = []
+        mae_list = []
+
         with torch.no_grad():
             for idx, (data, target) in enumerate(tqdm(val_dataloader)):
                 data, target = data.to(args.device), target.to(args.device)
                 pred = model(data)
                 loss = corss_loss(pred, target)
+                loss = loss.mean()
                 test_loss += loss.item()
-                test_acc += pred.argmax(dim=1).eq(target.argmax(dim=1)).sum().item()
-                tot_count += target.shape[0]
+                
+                accuracy = accuracy_score(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy())
+                precision = precision_score(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy(), average='macro')
+                recall = recall_score(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy(), average='macro')
+                f1 = f1_score(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy(), average='macro')
+                try:
+                    roc_auc = roc_auc_score(target.argmax(dim=1).cpu().numpy(), F.softmax(pred, dim=1).detach().cpu().numpy()[:, 1])
+                except ValueError:
+                    pass
+                mse = mean_squared_error(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy())
+                mae = mean_absolute_error(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy())
 
-        print('test Loss:{:.3f} Acc: {:.2f}% {}/{}'.format(
-            test_loss / (idx + 1), 100 * test_acc / len(val_dataloader.dataset),
-            test_acc, len(val_dataloader.dataset)))
-        wandb.log({"val_acc": test_acc / len(val_dataloader.dataset)})
+                if WANDB:
+                    wandb.log({"val_loss": loss.item()})
+                
+                accuracy_list.append(accuracy)
+                precision_list.append(precision)
+                recall_list.append(recall)
+                f1_list.append(f1)
+                roc_auc_list.append(roc_auc)
+                mse_list.append(mse)
+                mae_list.append(mae)
 
-        test_acc /= len(val_dataloader.dataset)
+            avg_accuracy = np.mean(accuracy_list)
+            avg_precision = np.mean(precision_list)
+            avg_recall = np.mean(recall_list)
+            avg_f1 = np.mean(f1_list)
+            avg_roc_auc = np.mean(roc_auc_list)
+            avg_mse = np.mean(mse_list)
+            avg_mae = np.mean(mae_list)
+            if WANDB:
+                wandb.log({
+                    "val_accuracy":avg_accuracy,
+                    "val_precision":avg_precision,
+                    "val_recall":avg_recall,
+                    "val_f1":avg_f1,
+                    "val_roc_auc":avg_roc_auc,
+                    "val_mse":avg_mse,
+                    "val_mae":avg_mae,
+                    })
 
-        if test_acc > best_acc:
-            print('Save ...')
+        if WANDB:
+            wandb.log({"val_acc":avg_accuracy})
+
+        if avg_accuracy > best_acc:
             if not os.path.isdir('checkpoint'):
                 os.mkdir('checkpoint')
             torch.save(model.state_dict(),
-                       './checkpoint/fasttext/fasttext_model_{:.2f}_epoch_{}.pth'.format(100 * test_acc, epoch))
+                    './checkpoint/fasttext/fasttext_model_{:.2f}_epoch_{}.pth'.format(100 * avg_accuracy, epoch))
             best_acc = test_acc
 
 

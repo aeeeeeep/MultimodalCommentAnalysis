@@ -15,3 +15,5 @@ checkpoint/
 __pycache__/
 wandb/
 *.csv.bk
+SingleModel/book_train/
+SingleModel/book_val/

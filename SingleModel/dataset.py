@@ -37,8 +37,9 @@ class BertDataset(BaseDataset):
         return len(self.df)
 
     def _try_getitem(self, idx):
-        source = self.text[idx]
-        source_ids = self.tokenizer.encode_plus(source, max_length=256, padding='max_length', truncation=True, return_tensors='pt')
+        words = self.text[idx].split()
+        drop_words = " ".join(words[:128] + words[-128:])
+        source_ids = self.tokenizer.encode_plus(drop_words, max_length=256, padding='max_length', truncation=True, return_tensors='pt')
         target = torch.zeros(2, dtype=torch.float32)
         try:
             target[int(self.labels[idx])] = 1.0

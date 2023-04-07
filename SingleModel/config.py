@@ -1,10 +1,10 @@
 class Config(dict):
     def version_config(self, version):
-        batch = 64
-        val_batch = 32
-        hp = {1: {'n_epoch':20, 'batch': batch, 'valid_batch': val_batch, 'n_layer':6},
+        batch = 72
+        val_batch = 36
+        hp = {1: {'n_epoch':2, 'batch': batch, 'valid_batch': val_batch, 'n_layer':6},
               }
-        self['n_epoch'] = hp[version].get('n_epoch', 20)
+        self['n_epoch'] = hp[version].get('n_epoch', 2)
         self['n_layer'] = hp[version].get('n_layer', 6)
         self['batch'] = hp[version].get('batch', batch)
         self['valid_batch'] = hp[version].get('valid_batch', val_batch)
@@ -21,10 +21,10 @@ class Config(dict):
         self['pad_id'] = 1
         
     def __init__(self, version, seed=0):
-        self['lr'] = 3e-4
-        self['model_dir'] = './checkpoint/%d'%version
+        self['lr'] = 1e-4
+        self['model_dir'] = './checkpoint/bert_%d'%version
         if seed>0:
             self['model_dir'] += '_%d'%seed
-        self['output_dir'] = './outputs/%d'%version
+        self['output_dir'] = './outputs/bert_%d'%version
         
         self.version_config(version)
