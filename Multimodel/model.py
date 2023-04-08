@@ -16,15 +16,14 @@ class MultiModal(nn.Module):
         self.classifier = nn.Linear(args.fc_size, 2)
         self.out = nn.Softmax(dim=1)
 
-    def forward(self, inputs, inference=False):
+    def forward(self, inputs, infer=False):
         inputs['image_input'] = self.visual_backbone(inputs['image_input'])
         bert_embedding = self.bert(inputs['text_input'], inputs['text_mask'])['pooler_output']
         vision_embedding = self.enhance(inputs['image_input'])
         final_embedding = self.fusion([vision_embedding, bert_embedding])
         prediction = self.out(self.classifier(final_embedding))
-
-        if inference:
-            return torch.argmax(prediction, dim=1)
+        if infer:
+            return inputs['asin'], inputs['time'], prediction.cpu().numpy()[:,1]
         else:
             return self.cal_loss(prediction, inputs['label'])
 
@@ -32,11 +31,7 @@ class MultiModal(nn.Module):
     def cal_loss(prediction, label):
         # label = label.squeeze(dim=1)
         loss = F.cross_entropy(prediction, label)
-        with torch.no_grad():
-            pred_label_id = torch.argmax(prediction, dim=1)
-            label = torch.argmax(label, dim=1)
-            accuracy = (label == pred_label_id).float().sum() / label.shape[0]
-        return loss, accuracy, pred_label_id, label
+        return loss, prediction, label
 
 class SENet(nn.Module):
     def __init__(self, channels, ratio=8):

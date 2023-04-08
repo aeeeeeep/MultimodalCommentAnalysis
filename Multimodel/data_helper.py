@@ -55,8 +55,10 @@ class MultiModalDataset(Dataset):
         self.id = self.df['ID'].values
         self.text = self.df['text'].values
         self.labels = self.df['label'].values
+        self.time = self.df['time'].values
+        self.asin = self.df['asin'].values
         self.img_list = []
-        for i in os.listdir("../data/Books_5_images"):
+        for i in os.listdir("../data/img_dataset/book"):
                 self.img_list.append(i[:-4])
         self.img_list = set(self.img_list)
         # initialize the text tokenizer
@@ -72,7 +74,7 @@ class MultiModalDataset(Dataset):
         return len(self.id)
 
     def get_visual_feats(self, idx: int) -> tuple:
-        img = Image.open('./data/Books_5_images/' + self.id[idx] + '.jpg')
+        img = Image.open('./data/img_dataset/book/' + self.id[idx] + '.jpg')
         img = img.convert("RGB")
         img_tensor = self.transform(img)
         mask = torch.ones((1,), dtype=torch.long)
@@ -104,7 +106,10 @@ class MultiModalDataset(Dataset):
         # Step 4, load label if not test mode
         if not self.test_mode:
             label = torch.zeros(2, dtype=torch.float32)
-            label[int(self.labels[idx])] = 1.0
+            label[int(self.labels[idx]/2)] = 1.0
             data['label'] = label
+        else:
+            data['time'] = self.time[idx]
+            data['asin'] = self.asin[idx]
 
         return data

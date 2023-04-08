@@ -20,7 +20,7 @@ def parse_args():
 
     # ======================== SavedModel Configs =========================
     parser.add_argument('--savedmodel_path', type=str, default='save/v1')
-    parser.add_argument('--ckpt_file', type=str, default='save/v1/model_.bin')
+    parser.add_argument('--ckpt_file', type=str, default='save/v1/model_epoch_1_mean_f1_0.9488.bin')
     parser.add_argument('--best_score', default=0.5, type=float, help='save checkpoint if mean_f1 > best_score')
 
     # ========================= Learning Configs ==========================
