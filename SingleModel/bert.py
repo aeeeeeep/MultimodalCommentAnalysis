@@ -19,7 +19,6 @@ import warnings
 warnings.filterwarnings("ignore")
 
 def compute_batch(model, source, target):
-    # source = to_device(source, 'cuda:0')
     source = source.to('cuda:0')
     target = to_device(target, 'cuda:0')
     pred = model(source)
@@ -29,7 +28,6 @@ def compute_batch(model, source, target):
 def evaluate(model, loader):
     metrics = Smoother(100)
     accuracy_list = []
-    train_loss_list = []
     train_acc_list = []
     precision_list = []
     recall_list = []
@@ -117,7 +115,6 @@ def train():
     Path(conf['model_dir']).mkdir(exist_ok=True, parents=True)
     for epoch in range(start_epoch, conf['n_epoch']):
         accuracy_list = []
-        train_loss_list = []
         train_acc_list = []
         precision_list = []
         recall_list = []
@@ -179,7 +176,7 @@ def train():
                 "train_mae":avg_mae,
                 })
 
-        if epoch % 1 == 0:
+        if epoch%1 == 0:
             checkpoint.save(conf['model_dir'] + '/model_%d.pt' % epoch)
             model.eval()
             metrics = evaluate(model, valid_loader)

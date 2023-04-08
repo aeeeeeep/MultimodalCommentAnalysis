@@ -1,3 +1,4 @@
+WANDB=False
 import os
 import gc
 import torch
@@ -12,8 +13,18 @@ import torchvision as tv
 import torch.optim as optim
 from collections import OrderedDict
 from torch.autograd import Variable
-from sklearn.metrics import classification_report
+from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score, mean_squared_error, mean_absolute_error, accuracy_score
 from torchvision import datasets, transforms, models
+import wandb
+import warnings
+warnings.filterwarnings("ignore")
+
+if WANDB:
+    wandb.init(
+            project="MultimodalCommentAnalysis",
+            name="resnet18",
+            )
+    
 
 data_dir = './data/img_dataset'
 class_names0 = os.listdir(data_dir)
@@ -151,8 +162,6 @@ model.cuda()
 
 train_loss=[]
 test_loss=[]
-train_accuracy=[]
-test_accuracy=[]
 best_acc = 0
 
 print("Training...")
@@ -162,6 +171,15 @@ for epoch in range(ins.epochs):
     correct=0
     iteration=0
     iter_loss=0.0
+    accuracy_list = []
+    train_loss_list = []
+    train_acc_list = []
+    precision_list = []
+    recall_list = []
+    f1_list = []
+    roc_auc_list = []
+    mse_list = []
+    mae_list = []
   
     model.train() # training mode
 
@@ -175,16 +193,37 @@ for epoch in range(ins.epochs):
                 inputs=inputs.cuda()
                 labels=labels.cuda()
             optimizer.zero_grad() # clear gradient
-            outputs=model(inputs)
-            loss=criterion(outputs,labels)
+            pred=model(inputs)
+            loss=criterion(pred,labels)
             iter_loss += loss.item() # accumulate loss
+            loss = loss.mean()
             loss.requires_grad_(True)
             loss.backward() # backpropagation
             optimizer.step() # update weights
+            
+            if WANDB:
+                wandb.log({"train_loss": loss.item(),})
 
             # save the correct predictions for training data
-            _,predicted=torch.max(outputs,1)
-            accuracy = (predicted.cpu()==labels.cpu()).sum()
+            accuracy = accuracy_score(labels.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy())
+            precision = precision_score(labels.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy(), average='macro')
+            recall = recall_score(labels.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy(), average='macro')
+            f1 = f1_score(labels.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy(), average='macro')
+            try:
+                roc_auc = roc_auc_score(labels.argmax(dim=1).cpu().numpy(), F.softmax(pred, dim=1).detach().cpu().numpy()[:, 1])
+            except ValueError:
+                pass
+            mse = mean_squared_error(labels.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().detach().numpy())
+            mae = mean_absolute_error(labels.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().detach().numpy())
+            
+            accuracy_list.append(accuracy)
+            precision_list.append(precision)
+            recall_list.append(recall)
+            f1_list.append(f1)
+            roc_auc_list.append(roc_auc)
+            mse_list.append(mse)
+            mae_list.append(mae)
+            
             correct += accuracy
             iteration +=1
             
@@ -193,14 +232,40 @@ for epoch in range(ins.epochs):
             _tqdm.update(1)
 
     train_loss.append(iter_loss/iteration)
-    train_accuracy.append((100*correct/len(image_datasets["train"])))
+    
+    avg_accuracy = np.mean(accuracy_list)
+    avg_precision = np.mean(precision_list)
+    avg_recall = np.mean(recall_list)
+    avg_f1 = np.mean(f1_list)
+    avg_roc_auc = np.mean(roc_auc_list)
+    avg_mse = np.mean(mse_list)
+    avg_mae = np.mean(mae_list)
+    if WANDB:
+        wandb.log({
+            "train_accuracy":avg_accuracy,
+            "train_precision":avg_precision,
+            "train_recall":avg_recall,
+            "train_f1":avg_f1,
+            "train_roc_auc":avg_roc_auc,
+            "train_mse":avg_mse,
+            "train_mae":avg_mae,
+            })
   
     correct=0
     iteration=0
     valid_loss=0.0
     print("testing...")
   
-    model.eval()  
+    model.eval()
+    accuracy_list = []
+    train_loss_list = []
+    train_acc_list = []
+    precision_list = []
+    recall_list = []
+    f1_list = []
+    roc_auc_list = []
+    mse_list = []
+    mae_list = []
   
     with tqdm(total=len(valid_loader)) as _tqdm:
         for i, (inputs, labels) in enumerate(valid_loader):
@@ -212,14 +277,52 @@ for epoch in range(ins.epochs):
                 inputs=inputs.cuda()
                 labels=labels.cuda()
             with torch.no_grad():
-                outputs=model(inputs)
-                loss=criterion(outputs,labels)
+                pred=model(inputs)
+                loss=criterion(pred,labels)
+                loss=loss.mean()
                 valid_loss += loss.item()
-
-                _,predicted=torch.max(outputs,1)
-                correct+=(predicted.cpu()==labels.cpu()).sum()
-
                 iteration+=1  
+                
+                accuracy = accuracy_score(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy())
+                precision = precision_score(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy(), average='macro')
+                recall = recall_score(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy(), average='macro')
+                f1 = f1_score(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy(), average='macro')
+                try:
+                    roc_auc = roc_auc_score(target.argmax(dim=1).cpu().numpy(), F.softmax(pred, dim=1).detach().cpu().numpy()[:, 1])
+                except ValueError:
+                    pass
+                mse = mean_squared_error(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy())
+                mae = mean_absolute_error(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy())
+
+                if WANDB:
+                    wandb.log({"val_loss": loss.item()})
+                
+                accuracy_list.append(accuracy)
+                precision_list.append(precision)
+                recall_list.append(recall)
+                f1_list.append(f1)
+                roc_auc_list.append(roc_auc)
+                mse_list.append(mse)
+                mae_list.append(mae)
+
+            avg_accuracy = np.mean(accuracy_list)
+            avg_precision = np.mean(precision_list)
+            avg_recall = np.mean(recall_list)
+            avg_f1 = np.mean(f1_list)
+            avg_roc_auc = np.mean(roc_auc_list)
+            avg_mse = np.mean(mse_list)
+            avg_mae = np.mean(mae_list)
+            if WANDB:
+                wandb.log({
+                    "val_accuracy":avg_accuracy,
+                    "val_precision":avg_precision,
+                    "val_recall":avg_recall,
+                    "val_f1":avg_f1,
+                    "val_roc_auc":avg_roc_auc,
+                    "val_mse":avg_mse,
+                    "val_mae":avg_mae,
+                    })
+
             
             _tqdm.update(1)
     

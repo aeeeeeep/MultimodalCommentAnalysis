@@ -1,4 +1,4 @@
-WANDB=False
+WANDB=True
 import wandb
 import random
 from collections import Counter, OrderedDict
@@ -229,9 +229,6 @@ def train():
                     pass
                 mse = mean_squared_error(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy())
                 mae = mean_absolute_error(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy())
-
-                if WANDB:
-                    wandb.log({"val_loss": loss.item()})
                 
                 accuracy_list.append(accuracy)
                 precision_list.append(precision)
@@ -241,26 +238,23 @@ def train():
                 mse_list.append(mse)
                 mae_list.append(mae)
 
-            avg_accuracy = np.mean(accuracy_list)
-            avg_precision = np.mean(precision_list)
-            avg_recall = np.mean(recall_list)
-            avg_f1 = np.mean(f1_list)
-            avg_roc_auc = np.mean(roc_auc_list)
-            avg_mse = np.mean(mse_list)
-            avg_mae = np.mean(mae_list)
-            if WANDB:
-                wandb.log({
-                    "val_accuracy":avg_accuracy,
-                    "val_precision":avg_precision,
-                    "val_recall":avg_recall,
-                    "val_f1":avg_f1,
-                    "val_roc_auc":avg_roc_auc,
-                    "val_mse":avg_mse,
-                    "val_mae":avg_mae,
-                    })
-
+        avg_accuracy = np.mean(accuracy_list)
+        avg_precision = np.mean(precision_list)
+        avg_recall = np.mean(recall_list)
+        avg_f1 = np.mean(f1_list)
+        avg_roc_auc = np.mean(roc_auc_list)
+        avg_mse = np.mean(mse_list)
+        avg_mae = np.mean(mae_list)
         if WANDB:
-            wandb.log({"val_acc":avg_accuracy})
+            wandb.log({
+                "val_accuracy":avg_accuracy,
+                "val_precision":avg_precision,
+                "val_recall":avg_recall,
+                "val_f1":avg_f1,
+                "val_roc_auc":avg_roc_auc,
+                "val_mse":avg_mse,
+                "val_mae":avg_mae,
+                })
 
         if avg_accuracy > best_acc:
             if not os.path.isdir('checkpoint'):
@@ -268,7 +262,6 @@ def train():
             torch.save(model.state_dict(),
                     './checkpoint/fasttext/fasttext_model_{:.2f}_epoch_{}.pth'.format(100 * avg_accuracy, epoch))
             best_acc = test_acc
-
 
 if __name__ == '__main__':
     train()
