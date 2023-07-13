@@ -1,6 +1,6 @@
 import time
 from pathlib import Path
-import pandas as pd
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -10,6 +10,7 @@ def get_parameters(model, pars):
     ret = [{'params': getattr(model, x).parameters()} for x in pars]
     print(ret)
     return ret
+
 
 def output_tensor(x, precision=3):
     print(np.round(x.detach().cpu().numpy(), precision))
@@ -335,11 +336,13 @@ class AWP:
         self.backup = {}
         self.backup_eps = {}
 
+
 def process_notes(notes):
     tokenizer = RegexpTokenizer(r'\w+')
     stop_words = stopwords.words('english')
     notes_processed = [[word.lower() for word in tokenizer.tokenize(x) if word not in stop_words] for x in notes]
     return notes_processed
+
 
 def pad_or_cut(value: np.ndarray, target_length: int):
     """填充或截断一维numpy到固定的长度"""
@@ -349,4 +352,3 @@ def pad_or_cut(value: np.ndarray, target_length: int):
     elif len(value) > target_length:  # 截断    
         data_row = value[:target_length]
     return data_row
-

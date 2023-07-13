@@ -11,7 +11,8 @@ def parse_args():
     parser.add_argument('--train_data_file', type=str, default='data/train.csv')
     parser.add_argument('--val_data_file', type=str, default='data/val.csv')
     parser.add_argument('--test_output_csv', type=str, default='data/result.csv')
-    parser.add_argument('--val_ratio', default=0.1, type=float, help='split 10 percentages of training data as validation')
+    parser.add_argument('--val_ratio', default=0.1, type=float,
+                        help='split 10 percentages of training data as validation')
     parser.add_argument('--batch_size', default=48, type=int, help="use for training duration per worker")
     parser.add_argument('--val_batch_size', default=128, type=int, help="use for validation duration per worker")
     parser.add_argument('--test_batch_size', default=128, type=int, help="use for testing duration per worker")
@@ -43,8 +44,8 @@ def parse_args():
     parser.add_argument("--bert_hidden_dropout_prob", type=float, default=0.1)
 
     # ========================== Swin ===================================
-    parser.add_argument('--swin_pretrained_path', type=str, default='/root/autodl-tmp/checkpoint-muti/swin_tiny_patch4_window7_224_22k.pth')
-
+    parser.add_argument('--swin_pretrained_path', type=str,
+                        default='/root/autodl-tmp/checkpoint-muti/swin_tiny_patch4_window7_224_22k.pth')
 
     # ========================== Video =============================
     parser.add_argument('--image_embedding_size', type=int, default=768)

@@ -5,6 +5,7 @@ from transformers import BertModel
 
 from swin import swin_tiny
 
+
 class MultiModal(nn.Module):
     def __init__(self, args):
         super().__init__()
@@ -23,7 +24,7 @@ class MultiModal(nn.Module):
         final_embedding = self.fusion([vision_embedding, bert_embedding])
         prediction = self.out(self.classifier(final_embedding))
         if infer:
-            return inputs['asin'], inputs['time'], prediction.cpu().numpy()[:,1]
+            return inputs['asin'], inputs['time'], prediction.cpu().numpy()[:, 1]
         else:
             return self.cal_loss(prediction, inputs['label'])
 
@@ -32,6 +33,7 @@ class MultiModal(nn.Module):
         # label = label.squeeze(dim=1)
         loss = F.cross_entropy(prediction, label)
         return loss, prediction, label
+
 
 class SENet(nn.Module):
     def __init__(self, channels, ratio=8):

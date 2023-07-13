@@ -1,10 +1,10 @@
 import torch
 from torch.utils.data import SequentialSampler, DataLoader
+from tqdm import tqdm
 
 from config import parse_args
 from data_helper import MultiModalDataset
 from model import MultiModal
-from tqdm import tqdm
 
 
 def inference():
@@ -36,6 +36,7 @@ def inference():
                 asin, time, pred = model(batch, infer=True)
                 for i in range(len(asin)):
                     f.write(f'{asin[i]},{time[i]},{pred[i]}\n')
+
 
 if __name__ == '__main__':
     inference()

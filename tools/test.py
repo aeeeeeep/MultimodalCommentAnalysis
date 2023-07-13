@@ -1,5 +1,7 @@
-import pandas as pd
 import os
+
+import pandas as pd
+
 label = pd.read_csv("../data/label.csv")
 img_list = []
 for i in os.listdir("../data/Books_5_images"):

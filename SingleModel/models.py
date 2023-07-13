@@ -1,6 +1,6 @@
-import torch
 import torch.nn as nn
 from transformers import BertModel
+
 
 class CustomModel(nn.Module):
     def __init__(self):

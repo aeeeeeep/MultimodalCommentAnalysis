@@ -2,9 +2,10 @@ import logging
 import random
 
 import numpy as np
-from sklearn.metrics import f1_score, accuracy_score
 import torch
+from sklearn.metrics import f1_score, accuracy_score
 from transformers import AdamW, get_linear_schedule_with_warmup
+
 
 def setup_device(args):
     args.device = 'cuda' if torch.cuda.is_available() else 'cpu'

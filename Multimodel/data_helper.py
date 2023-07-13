@@ -1,23 +1,21 @@
-import json
 import os
-import random
-import pandas as pd
-from io import BytesIO
 from functools import partial
 
-import numpy as np
+import pandas as pd
 import torch
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset, RandomSampler, SequentialSampler
 from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize
 from transformers import BertTokenizer
 
+
 def create_dataloaders(args):
     train_dataset = MultiModalDataset(args, args.train_data_file)
     val_dataset = MultiModalDataset(args, args.val_data_file)
 
     if args.num_workers > 0:
-        dataloader_class = partial(DataLoader, pin_memory=True, num_workers=args.num_workers, prefetch_factor=args.prefetch)
+        dataloader_class = partial(DataLoader, pin_memory=True, num_workers=args.num_workers,
+                                   prefetch_factor=args.prefetch)
     else:
         # single-thread reading does not support prefetch_factor arg
         dataloader_class = partial(DataLoader, pin_memory=True, num_workers=0)
@@ -33,6 +31,7 @@ def create_dataloaders(args):
                                       sampler=val_sampler,
                                       drop_last=False)
     return train_dataloader, val_dataloader
+
 
 class MultiModalDataset(Dataset):
     """ A simple class that supports multi-modal inputs.
@@ -59,7 +58,7 @@ class MultiModalDataset(Dataset):
         self.asin = self.df['asin'].values
         self.img_list = []
         for i in os.listdir("../data/img_dataset/book"):
-                self.img_list.append(i[:-4])
+            self.img_list.append(i[:-4])
         self.img_list = set(self.img_list)
         # initialize the text tokenizer
         self.tokenizer = BertTokenizer.from_pretrained(args.bert_dir, use_fast=True, cache_dir=args.bert_cache)
@@ -83,7 +82,8 @@ class MultiModalDataset(Dataset):
     def tokenize_text(self, text: str) -> tuple:
         words = text.split()
         drop_words = " ".join(words[:128] + words[-128:])
-        encoded_inputs = self.tokenizer(drop_words, max_length=self.bert_seq_length, padding='max_length', truncation=True)
+        encoded_inputs = self.tokenizer(drop_words, max_length=self.bert_seq_length, padding='max_length',
+                                        truncation=True)
         input_ids = torch.LongTensor(encoded_inputs['input_ids'])
         mask = torch.LongTensor(encoded_inputs['attention_mask'])
         return input_ids, mask
@@ -106,7 +106,7 @@ class MultiModalDataset(Dataset):
         # Step 4, load label if not test mode
         if not self.test_mode:
             label = torch.zeros(2, dtype=torch.float32)
-            label[int(self.labels[idx]/2)] = 1.0
+            label[int(self.labels[idx] / 2)] = 1.0
             data['label'] = label
         else:
             data['time'] = self.time[idx]

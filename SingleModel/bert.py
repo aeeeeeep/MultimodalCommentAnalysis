@@ -1,11 +1,14 @@
-WANDB=True
+WANDB = True
+import warnings
 from pathlib import Path
 
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
 import torch.nn.functional as F
 import wandb
+from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score, mean_squared_error, \
+    mean_absolute_error, accuracy_score
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -14,9 +17,9 @@ from config import Config
 from dataset import BertDataset
 from models import CustomModel
 from utils import to_device, Checkpoint, Step, Smoother, Logger
-from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score, mean_squared_error, mean_absolute_error, accuracy_score
-import warnings
+
 warnings.filterwarnings("ignore")
+
 
 def compute_batch(model, source, target):
     source = source.to('cuda:0')
@@ -24,6 +27,7 @@ def compute_batch(model, source, target):
     pred = model(source)
     loss = losses(target, pred)
     return loss, pred
+
 
 def evaluate(model, loader):
     metrics = Smoother(100)
@@ -42,11 +46,13 @@ def evaluate(model, loader):
         pred = pred.cpu().detach()
 
         accuracy = accuracy_score(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy())
-        precision = precision_score(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy(), average='macro')
+        precision = precision_score(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy(),
+                                    average='macro')
         recall = recall_score(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy(), average='macro')
         f1 = f1_score(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy(), average='macro')
         try:
-            roc_auc = roc_auc_score(target.argmax(dim=1).cpu().numpy(), F.softmax(pred, dim=1).detach().cpu().numpy()[:, 1])
+            roc_auc = roc_auc_score(target.argmax(dim=1).cpu().numpy(),
+                                    F.softmax(pred, dim=1).detach().cpu().numpy()[:, 1])
         except ValueError:
             pass
         mse = mean_squared_error(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy())
@@ -69,22 +75,26 @@ def evaluate(model, loader):
 
     if WANDB:
         wandb.log({
-            "val_accuracy":avg_accuracy,
-            "val_precision":avg_precision,
-            "val_recall":avg_recall,
-            "val_f1":avg_f1,
-            "val_roc_auc":avg_roc_auc,
-            "val_mse":avg_mse,
-            "val_mae":avg_mae,
-            })
+            "val_accuracy": avg_accuracy,
+            "val_precision": avg_precision,
+            "val_recall": avg_recall,
+            "val_f1": avg_f1,
+            "val_roc_auc": avg_roc_auc,
+            "val_mse": avg_mse,
+            "val_mae": avg_mae,
+        })
 
     metrics.update(val_acc=avg_accuracy)
     return metrics
 
+
 def get_model():
     return CustomModel()
 
+
 losses = nn.BCEWithLogitsLoss()
+
+
 def train():
     if WANDB:
         wandb.init(
@@ -137,18 +147,20 @@ def train():
 
             logger.log(step.value, loss.item())
             accuracy = accuracy_score(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy())
-            precision = precision_score(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy(), average='macro')
+            precision = precision_score(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy(),
+                                        average='macro')
             recall = recall_score(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy(), average='macro')
             f1 = f1_score(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().numpy(), average='macro')
             try:
-                roc_auc = roc_auc_score(target.argmax(dim=1).cpu().numpy(), F.softmax(pred, dim=1).detach().cpu().numpy()[:, 1])
+                roc_auc = roc_auc_score(target.argmax(dim=1).cpu().numpy(),
+                                        F.softmax(pred, dim=1).detach().cpu().numpy()[:, 1])
             except ValueError:
                 pass
             mse = mean_squared_error(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().detach().numpy())
             mae = mean_absolute_error(target.argmax(dim=1).cpu().numpy(), pred.argmax(dim=1).cpu().detach().numpy())
-            
+
             if WANDB:
-                wandb.log({'step': step.value,'train_loss': loss.item()})
+                wandb.log({'step': step.value, 'train_loss': loss.item()})
             accuracy_list.append(accuracy)
             precision_list.append(precision)
             recall_list.append(recall)
@@ -167,16 +179,16 @@ def train():
 
         if WANDB:
             wandb.log({
-                "train_accuracy":avg_accuracy,
-                "train_precision":avg_precision,
-                "train_recall":avg_recall,
-                "train_f1":avg_f1,
-                "train_roc_auc":avg_roc_auc,
-                "train_mse":avg_mse,
-                "train_mae":avg_mae,
-                })
+                "train_accuracy": avg_accuracy,
+                "train_precision": avg_precision,
+                "train_recall": avg_recall,
+                "train_f1": avg_f1,
+                "train_roc_auc": avg_roc_auc,
+                "train_mse": avg_mse,
+                "train_mae": avg_mae,
+            })
 
-        if epoch%1 == 0:
+        if epoch % 1 == 0:
             checkpoint.save(conf['model_dir'] + '/model_%d.pt' % epoch)
             model.eval()
             metrics = evaluate(model, valid_loader)
